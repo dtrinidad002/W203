@@ -1,0 +1,150 @@
+---
+title: 'Lab 1: Question 3'
+author: " Max Hoff, Connor McCormick, and Chi Ma"
+date: "6/23/2021"
+output:
+  bookdown::pdf_document2: 
+    toc: true
+---
+
+\clearpage
+
+# Who are more likely to disapprove their governor's way to handle COVID-19?
+
+## Importance and Context
+
+Are people who believe that science is important for making government decisions about COVID-19 more likely to disapprove of the way their governor is handling the pandemic?
+  
+The ongoing global pandemic of COVID-19 has swept the globe since the first identified case in December 2019. Even we fought against it so hard throughout 2020, it is still too early to say "Everything is pretty under control". As of 26 June 2021, more than 180 million cases have been confirmed, with more than 3.91 million confirmed deaths attributed to COVID-19, making it one of the deadliest pandemics in history. In this critical situation, the governor's decision making of the way to handle the pandemic is more than important. The local government needs to know how people think about the importance of science when making government decisions about COVID-19, and how will that impact their support of local government decisions, that could help the local government to make better decisions about COVID-19 handling and gain support from local people. Additionally, science has taken center stage during the COVID-19 pandemic, knowing if people who believe that science is important for making government decisions about COVID-19 is more or less likely to disapprove of the way their governor is handling the pandemic, will give us a deeper insight on the significance of science on pandemic handling.
+
+```{r load packages, echo=FALSE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2) 
+library(tidyverse)
+library(haven)
+library(rmarkdown)
+library(magrittr)
+library(knitr)
+library(patchwork)
+
+theme_set(theme_bw())
+
+options(tinytex.verbose = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r load and clean data, echo = FALSE, message = FALSE}
+data <- read_dta(file = "anes_timeseries_2020_stata_20210324.dta")
+
+q3 <- data %>% select(c('V200001', 'V202310', 'V201145')) %>%
+  rename(
+    id_2020 = 'V200001',
+    disapprove_governor = 'V201145',
+    science_important = 'V202310'
+  ) %>%
+  mutate(disapprove_governor = 
+           case_when(
+             disapprove_governor == 1 ~ FALSE,
+             disapprove_governor == 2 ~ TRUE,
+             disapprove_governor %in% list(-8, -9) ~ NA
+           )) %>%
+  mutate(science_important = 
+           case_when(
+             science_important > 1 ~ TRUE,
+             science_important == 1 ~ FALSE,
+             science_important %in% list(-5, -6, -7, -9) ~ NA
+           ))
+```
+
+## Description of Data
+We will draw data from the 2020 American National Election Studies to resolve the question, ANES is a project that has been ongoing since 1948, and federally funded by the National Science Foundation since 1977. 
+
+To better answer the research question, there are two main parts to look into, the first one is "do people believe that science is important for making government decisions about COVID-19", the second one is "do people approve or disapprove of the way their governor is handling the pandemic". 
+
+For the first one, we will use V202310 HOW IMPORTANT SHOULD SCIENCE BE FOR DECISIONS ABOUT COVID-19 as our question variable and rename it as `science_important`. It has 9 potential values:
+-9. Refused
+-7. No post-election data, deleted due to incomplete interview
+-6. No post-election interview
+-5. Interview breakoff (sufficient partial IW)
+1. Not at all important
+2. A little important
+3. Moderately important
+4. Very important
+5. Extremely important
+We will replace -9, -7, -6, -5 with NA in this variable as those values won't give us any insight to the question. Then if the value > 1, it means the interviewee believes that the science is important when making government decisions about Covid-19, even it is a little important, so we replace the value with TRUE. And if the value = 1, it means the interviewee thinks the science is not at all important, so we replace the value with FALSE.
+
+For the second one, we will use V201145 APPROVE OR DISAPPROVE R’S GOVERNOR HANDLING COVID-19 and rename it as `disapprove_governor`. There are some other relevant variables in the ANES database like pre_how_much_approve_or_disapprove: V201146 and pre_summary: V201147x, but since we only care about approve or disapprove, how much of it is beyond scope here. The variable we choose has 4 potential values:
+-9. Refused
+-8. Don’t know
+1. Approve
+2. Disapprove
+We will replace -9, -8 with NA, and if the value is 1, that means the interviewee approved the governor's way handling pandemic, so we mark it as FALSE, as this variable's name is `disapprove_governor`. If the value is 2, that means the interviewee disapproved the governor's way, so we mark the variable as TRUE.
+
+In this case, `disapprove_governor` is our outcome variable, and it's binary. As a binary variable can be treated as metric. Our rule is that a metric variable is one in which intervals of the same size are equivalent. In the case of a binary variable, there is only one interval - the one from 0 to 1.
+
+As we can see from Table1, almost 99% interviewees in this sample believe that science is important for making government decisions about COVID-19, that also looks very straightforward by taking look at the plot_1. Out from the 99% people who believe in science, 62.7% approve their governors' way of handling pandemic and 37.3% disapprove. We can also tell the difference based on plot_2. Only less than 2% interviewees believe that science is not at all important for making COVID-19 government decisions. And the number of people who disapprove their governor among this 2% interviewees is slightly more than the number of people who approve their governor, that's what we can see from plot2.
+
+```{r make summary table, echo = FALSE} 
+summary_table <-
+  prop.table(
+    table(
+      ifelse(q3$science_important, "Science is important for Covid19 decision", "Science is not important for Covid19 decision"), 
+      ifelse(q3$disapprove_governor, "Disapprove Governor", "Approve Governor")
+      )
+  )
+```
+
+
+```{r summary-table, echo = FALSE}
+kable(
+  summary_table,
+  digits = 2,
+  caption = 'Cross Tab of disapprove or approve the way governor handling Covid19 based on trust in science about pandemic decision', 
+  booktabs = TRUE
+)
+```
+
+```{r create data plot1, echo=FALSE}
+science_important_plot <- q3 %>% 
+   subset(!is.na(science_important)) %>%
+   count(science_important) %>%
+   ggplot() +
+   aes(x=science_important, y=n, fill=science_important) +
+   geom_bar(stat = "identity") + 
+   labs(x = "Science is important", y="Count", fill = "Science is important", title="Science is important or not in Government Covid19 Decision")
+```
+
+```{r create data plot2, echo=FALSE}
+disapprove_and_science_plot <- q3 %>% 
+   subset(!is.na(science_important) & !is.na(disapprove_governor)) %>%
+   count(science_important, disapprove_governor) %>%
+   ggplot() +
+   aes(x=science_important, y=n, fill=disapprove_governor) +
+   geom_bar(stat="identity", position = "dodge") +
+   labs(x = "Science is important", y="Count", fill = "Disapprove Governor", title="Disapprove or approve Governor handling Covid19 based on Trust in Science")
+```
+
+```{r plots, message = FALSE, echo = FALSE}
+(science_important_plot) / (disapprove_and_science_plot) 
+```
+Hypothesis
+  
+Null Hypothesis: People who believe that science is important and people who believe that science is not at all important for making government decisions about COVID-19 are equally likely to disapprove of the way their governor is handling the pandemic
+  
+Alternative Hypothesis: People who believe that science is important and people who believe that science is not at all important for making government decisions about COVID-19 are not equally likely to disapprove of the way their governor is handling the pandemic
+
+## Most appropriate test
+`science_important` and `disapprove_governor` those two variables are both binary. And binary variable can be treated as metric. Our rule is that a metric variable is one in which intervals of the same size are equivalent, which means a binary variable, there is only one interval - the one from 0 to 1. So those two variables are both measured on metric scale. In order to evaluate the hypothesis we have, a parametric test is appropriate. Furthermore, the data is unpaired, since each individual has a unpaired of measurements. As we are doing a parametric test for unpaired data, I will use a unpaired t-test in this case. Since our outcome variable is a binary variable, it is metric and parametric, wicoxon rank-sum test won't be considered here.
+
+The unpaired t-test requires the following assumptions to be true. First, data must be IID data. As ANES 2020 pilot is using the panel of individuals that use the online system YouGov to reward individuals for filling out surveys. That makes the data they collected more possible to be dependent. And YouGov claims that hey have millions of users, we think the effectiveness between individuals could be rare. Second, the data should be measured on a metric scale. As we know our two binary variables are metric, because there is only one interval, which is equivalent to themselves. Third, not too unnormal considering the sample size. The distribution is not too unnormal, and it is not a major problem for the CLT. In addition, we have a large sample size, so we should be fine. 
+
+## Test, results and interpretation
+```{r test result, echo=TRUE}
+test_result <- t.test(q3$disapprove_governor ~ q3$science_important)
+test_result
+```
+As we can see from the test result, the p-value 7.071e-09 is far less than 0.05, this gives us pretty strong evidence to reject the null hypothesis that People who believe that science is important and people who believe that science is not at all important for making government decisions about COVID-19 are equally likely to disapprove of the way their governor is handling the pandemic.
+
+For a measure of effect size, we can compare the means of the two groups, group FALSE: people who believe that science is not at all important for making government decisions about COVID-19, group TRUE: people who believe that science is important for making the decisions.  We can say that the fraction of people who believe that science is not at all important that disapprove their governor is 0.6495726 - 0.3711954 = 0.28 higher than the fraction of people who believe that science is important that disapprove their governor.
+
+We have been doing this test based on the ANES data, but the data could be limited since the number of people who don't believe in science when facing the pandemic is fairly small compared to the number of people in the other group. Probably if we can increase the sample size, we may get the more accurate test result. 

@@ -1,0 +1,517 @@
+---
+title: 'Lab 1: Age and Voting Patterns'
+author: "Max Hoff, Connor McCormick, Chi Ma"
+output: pdf_document
+  bookdown::pdf_document2: 
+    toc: true
+---
+
+\clearpage
+
+# Are Democractic voters older or younger than Republican voters in 2020?
+
+## Importance and Context
+
+The 2020 presidential election is often talked as a potential turning point in American politics. After much stability in terms of demographic voting patterns over the previous 40 or so years, starting in the mid 2010s, signs of stability for these voting patterns began to weaken. As these voting patterns changed, so have the policies that each party endorses. Pundits began speculating about the future of each of the parties, and in turn the direction of the country. Understanding the underlying changes in demographics, and understanding demographics relates to voting patterns is key to predicting the future of our country. 
+
+This study focuses on one of the main demographic attributes; age. Republicans have historically been a much older voting group, but with all the shifting party alliances, is this trend still holding? If it is changing, this might have a large impact on future elections, and which policies each party embraces. 
+
+Our study concludes that it does look like this trend is in fact changing, as we show that there is not much of a difference in age between the parties anymore. This study only uses one method to determine this result, so we'll detail how exactly we reached our conclusion. On top of this, it is uncertain whether this is just a temporary change, or a long term trend that is just beginning. 
+
+```{r load packages, echo=TRUE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidyverse) # if you want more, but still core, toolkit
+library(haven)
+
+theme_set(theme_bw())
+
+options(tinytex.verbose = TRUE)
+
+#default palettes
+cb_palette_1 <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cb_palette_2 <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+```
+
+```{r load and clean data, echo=FALSE, warning=TRUE, message=FALSE}
+df <- read_dta('anes_timeseries_2020_stata_20210324.dta')
+```
+
+```{r}
+useful_columns <- c('id_2020', 'age', 'party_pre_preference_simplified', 'party_post_preference_simplified', 'presidential_preference_simplified', 'house_preference_simplified', 'senate_preference_simplified', 'governor_preference_simplified', 'vote_in_2016_simplified', 'vote_in_2012_simplified')
+
+df <- df %>% rename(
+    #Qs1,2,3:
+    id_2020 = 'V200001',
+    mode_of_interview = 'V200002',
+    eligibility_concern_flag = 'V200005',
+    presidential_preference = 'V201075x', #main voter affiliation field
+    presidential_candidate_intent = 'V201033',
+    presidential_candidate_preference = 'V201036',
+    presidential_candidate_intent_strength = 'V201034',
+    presidential_candidate_preference_strength = 'V201037',
+    presidential_candidate_preference_yn = 'V201035',
+    house_preference = 'V201076x',
+    senate_preference = 'V201077x',
+    governor_preference = 'V201078x',
+    voting_liklihood = 'V201100',
+    vote_in_2016__yn_v1 = 'V201101',
+    vote_in_2016_yn_v2 = 'V201102',
+    vote_in_2016 = 'V201103',
+    vote_in_2012 = 'V201105',
+    party_pre = 'V201018',
+    party_post = 'V202064',
+    
+    #Q1:
+    age = 'V201507x',
+    
+    #Q2:
+    difficulty_voting = 'V202120a',
+    difficulty_w_id_card = 'V202120b',
+    difficulty_obtaining_absentee_ballot = 'V202120c',
+    confusion_about_ballot_or_machine = 'V202120d',
+    difficulty_getting_to_poll = 'V202120e',
+    long_wait_times = 'V202120f',
+    work_schedule = 'V202120g',
+    bad_weather = 'V202120h',
+    difficulty_mailing = 'V202120i',
+    difficulty_other = 'V202120j',
+    difficulty_none = 'V202120k',
+    
+    #Q3:
+    science_influence_in_covid_public_policy = 'V202310',
+    trust_in_experts = 'V202306',
+    trust_in_experts_strength = 'V202307',
+    trust_in_experts_summary = 'V202308x',
+    need_of_experts = 'V202309',
+    ) %>%
+<<<<<<< HEAD
+  mutate(presidential_preference_simplified = 
+    case_when(
+      presidential_preference == -1 ~ 'NA',
+      presidential_preference == 10
+      | presidential_preference == 20
+      | presidential_preference == 30 ~ 'Democrat'
+=======
+  mutate(
+    presidential_preference_simplified = 
+      case_when(
+        presidential_preference == -1 
+        ~ 'No Vote',
+        presidential_preference == 10
+        | presidential_preference == 20
+        | presidential_preference == 30 
+        ~ 'Democrat Vote',
+        presidential_preference == 11
+        | presidential_preference == 21
+        | presidential_preference == 31
+        ~ 'Republican Vote',
+        presidential_preference == 12
+        | presidential_preference == 22
+        | presidential_preference == 32
+        ~ 'Other Vote'
+      ),
+    house_preference_simplified = 
+      case_when(
+        house_preference == -1
+        | house_preference == 19
+        | house_preference == 29
+        | house_preference == 39
+        ~ 'No Vote',
+        house_preference == 10
+        | house_preference == 20
+        | house_preference == 30 
+        ~ 'Democrat Vote',
+        house_preference == 11
+        | house_preference == 21
+        | house_preference == 31
+        ~ 'Republican Vote',
+        house_preference == 12
+        | house_preference == 22
+        | house_preference == 32
+        ~ 'Other Vote'
+      ),
+    senate_preference_simplified = 
+      case_when(
+        senate_preference == -1
+        | senate_preference == 19
+        | senate_preference == 29
+        | senate_preference == 39
+        ~ 'No Vote',
+        senate_preference == 10
+        | senate_preference == 20
+        | senate_preference == 30 
+        ~ 'Democrat Vote',
+        senate_preference == 11
+        | senate_preference == 21
+        | senate_preference == 31
+        ~ 'Republican Vote',
+        senate_preference == 12
+        | senate_preference == 22
+        | senate_preference == 32
+        ~ 'Other Vote'
+      ),
+    governor_preference_simplified = 
+      case_when(
+        governor_preference == -1
+        | governor_preference == 19
+        | governor_preference == 29
+        | governor_preference == 39
+        ~ 'No Vote',
+        governor_preference == 10
+        | governor_preference == 20
+        | governor_preference == 30 
+        ~ 'Democrat Vote',
+        governor_preference == 11
+        | governor_preference == 21
+        | governor_preference == 31
+        ~ 'Republican Vote',
+        governor_preference == 12
+        | governor_preference == 22
+        | governor_preference == 32
+        ~ 'Other Vote'
+      ),
+    party_pre_preference_simplified = 
+      case_when(
+        party_pre == -9
+        | party_pre == -8
+        | party_pre == -1
+        | party_pre == 4
+        | party_pre == 5
+        ~ 'Unregistered',
+        party_pre == 1
+        ~ 'Registered Democrat',
+        party_pre == 2
+        ~ 'Registered Republican'
+        # , party_pre == 4
+        # | party_pre == 5
+        # ~ 'Other'
+        ),
+    party_post_preference_simplified = 
+      case_when(
+        party_post == -9
+        | party_post == -8
+        | party_post == -7
+        | party_post == -6
+        | party_post == -1
+        ~ 'Unregistered',
+        party_post == 1
+        ~ 'Registered Democrat',
+        party_post == 2
+        ~ 'Registered Republican',
+        party_post == 4
+        | party_post == 5
+        ~ 'Other'),
+    vote_in_2016_simplified = 
+      case_when(
+        vote_in_2016 == -9
+        | vote_in_2016 == -8
+        | vote_in_2016 == -1
+        ~ 'No Vote',
+        vote_in_2016 == 1
+        ~ 'Democrat Vote',
+        vote_in_2016 == 2
+        ~ 'Republican Vote',
+        vote_in_2016 == 5
+        ~ 'Other Vote'),
+    vote_in_2012_simplified = 
+      case_when(
+        vote_in_2012 == -9
+        | vote_in_2012 == -8
+        | vote_in_2012 == -1
+        ~ 'No Vote',
+        vote_in_2012 == 1
+        ~ 'Democrat Vote',
+        vote_in_2012 == 2
+        ~ 'Republican Vote',
+        vote_in_2012 == 5
+        ~ 'Other Vote')
+    ) %>%
+  select(all_of(useful_columns))
+```
+
+```{r}
+df
+```
+
+
+```{r}
+df <- df %>%
+  mutate(
+    
+    #version 1: no record of voting for both parties in this election
+    swing_voter_flag_v1 = case_when(
+    #each of the possible combinations for a republican in one vote but not the others
+      ((presidential_preference_simplified == 'Republican'
+      & (house_preference_simplified == 'Democrat'
+         | senate_preference_simplified == 'Democrat'
+         | governor_preference_simplified == 'Democrat'))
+      | (house_preference_simplified == 'Republican'
+         & (senate_preference_simplified == 'Democrat'
+            | governor_preference_simplified == 'Democrat'))
+      | (senate_preference_simplified == 'Republican'
+         & governor_preference_simplified == 'Democrat'))
+      
+      #each of the possible combinations for a democrat in one vote but not the others
+      | ((presidential_preference_simplified == 'Democrat'
+      & (house_preference_simplified == 'Republican'
+         | senate_preference_simplified == 'Republican'
+         | governor_preference_simplified == 'Republican'))
+      | (house_preference_simplified == 'Democrat'
+         & (senate_preference_simplified == 'Republican'
+            | governor_preference_simplified == 'Republican'))
+      | (senate_preference_simplified == 'Democrat'
+         & governor_preference_simplified == 'Republican'))
+      
+      ~ 'swing_voter',
+      TRUE ~ 'consistent_voter'
+      ),
+    
+    
+    #version 2: no contradictions between presidential vote and the others (e.g., it's okay if senate and governor votes contradict)
+    swing_voter_flag_v2 = case_when(
+      (presidential_preference_simplified == 'Republican'
+      & (house_preference_simplified == 'Democrat'
+       | senate_preference_simplified == 'Democrat'
+       | governor_preference_simplified == 'Democrat'))
+    
+      #democrat version
+      | (presidential_preference_simplified == 'Democrat'
+        & (house_preference_simplified == 'Republican'
+         | senate_preference_simplified == 'Republican'
+         | governor_preference_simplified == 'Republican'))
+    
+      ~ 'swing_voter',
+      TRUE ~ 'consistent_voter'
+      ),
+    
+    
+    #version 3: no contradictions between other 2020 votes and 2016 pres vote
+    swing_voter_flag_v3 = case_when(
+      (presidential_preference_simplified == 'Republican'
+      & (house_preference_simplified == 'Democrat'
+       | senate_preference_simplified == 'Democrat'
+       | governor_preference_simplified == 'Democrat'
+       | vote_in_2016_simplified == 'Hillary Clinton'))
+    
+      #democrat version
+      | (presidential_preference_simplified == 'Democrat'
+        & (house_preference_simplified == 'Republican'
+         | senate_preference_simplified == 'Republican'
+         | governor_preference_simplified == 'Republican'
+         | vote_in_2016_simplified == 'Mitt Romney'))
+    
+      ~ 'swing_voter',
+      TRUE ~ 'consistent_voter'
+      ),
+    
+    
+    #version 4: no contradictions between other 2020 votes and 2016 and 2012 pres votes
+    swing_voter_flag_v4 = case_when(
+      (presidential_preference_simplified == 'Republican'
+      & (house_preference_simplified == 'Democrat'
+       | senate_preference_simplified == 'Democrat'
+       | governor_preference_simplified == 'Democrat'
+       | vote_in_2016_simplified == 'Hillary Clinton'
+       | vote_in_2012_simplified == 'Barack Obama'))
+    
+      #democrat version
+      | (presidential_preference_simplified == 'Democrat'
+        & (house_preference_simplified == 'Republican'
+         | senate_preference_simplified == 'Republican'
+         | governor_preference_simplified == 'Republican'
+         | vote_in_2016_simplified == 'Donald Trump'
+         | vote_in_2016_simplified == 'Mitt Romney'))
+    
+      ~ 'swing_voter',
+      TRUE ~ 'consistent_voter'
+      ),
+    
+    
+    #version 5: no contradictions between 2020 presidential vote and 2016 pres votes
+    swing_voter_flag_v5 = case_when(
+      (presidential_preference_simplified == 'Republican'
+      & (vote_in_2016_simplified == 'Hillary Clinton'))
+    
+      #democrat version
+      | (presidential_preference_simplified == 'Democrat'
+        & (vote_in_2016_simplified == 'Mitt Romney'))
+    
+      ~ 'swing_voter',
+      TRUE ~ 'consistent_voter'
+      ),
+    
+    
+    #version 6: no contradictions between other 2020 votes and 2016 and 2012 pres votes
+    swing_voter_flag_v6 = case_when(
+      (presidential_preference_simplified == 'Republican'
+      & (vote_in_2016_simplified == 'Hillary Clinton'
+       | vote_in_2012_simplified == 'Barack Obama'))
+    
+      #democrat version
+      | (presidential_preference_simplified == 'Democrat'
+        & (vote_in_2016_simplified == 'Donald Trump'
+         | vote_in_2016_simplified == 'Mitt Romney'))
+    
+      ~ 'swing_voter',
+      TRUE ~ 'consistent_voter'
+      )
+>>>>>>> main
+    )
+```
+
+
+## Exploratory Data Analysis
+
+We reached these conclusions by analyzing the American National Election Survey (ANES) data set, which surveys thousands of American citizens on their political beliefs. The data set includes many fields related to party affiliation and age. The main challenge of our analysis was determining how we defined 'party', and then how to conduct a test.
+
+### Determining Party Affiliation
+
+Although the question seems fairly straightforward at the outset, once you get into the details, the assignment of an individual to a political party is actually quite tricky. Is a moderate voter that consistently votes Republican a Republican? Is a registered Democrat that votes for a Republican presidential candidate, an independent candidate in the Senate, and a Democrat in the House a Democrat? To make it more complicated, what if the individuals that make up these cases make up a significant portion of the population, and have a material age difference compared to the rest? 
+
+Let's dig into some of these cases and uncover a grouping that makes the most sense for this test:
+
+#### Voting relation to party identification
+
+Our main concern with just picking presidential vote as a voter's party is that the 2020 election was a quite unusual election in which we believe a material portion might have deviated from their typical voting party. Our main concern with choosing the registered party as a voter's party is that all voters might not be registered. 
+
+The first question that might come to mind is; 'Is party identification closely tied to voting party?'. The chart below shows an unexpected picture; that declared party and voting party aren't as correlated as we were expecting:
+
+```{r fig.align="center", echo = FALSE,fig.width = 14,fig.height=2}
+# party_voting_affiliation <- 
+df %>%
+  ggplot() +
+  aes(fill = house_preference_simplified, x = interaction(party_pre_preference_simplified, presidential_preference_simplified)) +
+  geom_bar(position = 'stack') + #see "useful columns" in line 19 for other options
+  geom_line(aes(y = mean(age) )) +
+  ggtitle(label = 'Declared Party and Voting Party Affiliation', subtitle = 'NAs correspond to non-respondents (plus related)')  + 
+  scale_y_continuous(sec.axis = sec_axis(~./max(df$age))) +
+  xlab('Party.Presidential Vote') + 
+  ylab('Count of respondents') +
+  theme(axis.title.x = element_text(vjust=-10, margin = margin(b=30))) +
+  labs(fill = 'House Vote Preference') +
+  scale_fill_manual(values = cb_palette_1)
+```
+
+```{r fig.align="center", echo = FALSE,fig.width = 10,fig.height=2}
+df %>%
+  group_by(party_pre_preference_simplified, presidential_preference_simplified) %>%
+  summarize(avg = mean(age),
+            count = n()) %>%
+  ggplot() +
+  aes(x = interaction(party_pre_preference_simplified, presidential_preference_simplified), y = avg) +
+  geom_line() + 
+  geom_point() +
+  ggtitle(label = 'Average age by declared party and voting party affiliation') +
+  xlab('Party.Vote')
+```
+A couple observations from the charts above:
+  1. Unregistered voters outnumbered registered voters for both Democrats and Republicans. 
+  2. From the line chart you can see that age can have significant differences between groups, meaning the grouping decision will most likely have a material impact on the test. 
+  3. Most voters registered to a party vote (shown by the close to zero amount for 'Registered Democrat.No Vote' and 'Registered Republican.No Vote').
+  4. There's a material amount of Republicans that voted Democrat (and vice versa).
+  5. For unregistered voters, a material amount of respondents voted for conflicting parties between the Presidential vote and the House vote.
+  
+Through this analysis we were hoping to find that either voting party or registered party gave us a clean grouping, but unfortunately this didn't happen, as shown by the messiness of the observations above. With that being said, we think it's best to go with the grouping that makes the most logical sense. To us, we believed registered party makes the most sense since voting party for this year is most likely flawed, and that our sample size of only registered voters is still large enough. Although we could come up with a grouping that combines registered voters with voting party for unregistered voters, we run into the problem of having to decide whether to include or exclude voters that support the opposing party with the House or Senate vote. We believe the cleanest cut-off is to go with registered party. Although this decision is subjective in nature and will impact the results of our test, there was clear-cut option, and our each team member believed this to be the least-worse.
+
+
+# Hypothesis
+
+Our team believes that Republicans voters have historically been older than Democrat voters and this trend most likely held in the 2020 election. The way we'll conduct our test though is that we'll set out to disprove that Republican and Democrat voters have the same age, and then determine direction if the test shows that the average ages are in fact different. 
+
+In terms of statistical language, we'll conduct a paired two-tailed t-test, against the null hypothesis that democrat and republican voters are the same age. 
+
+# Test Results
+
+```{r}
+test_df <- df %>%
+  filter(party_pre_preference_simplified == 'Registered Democrat' | party_pre_preference_simplified == 'Registered Republican')
+
+t.test(age ~ party_pre_preference_simplified, data = test_df)
+```
+
+The test results show a p-value less than .05, which in statistical language tells us to reject the null hypothesis. In plain language this means that the difference in ages between the two groups is most likely real. There's a 1-in-40 that the result isn't real (a false positive/Type-1 error), which is a pretty reliable result. There is still a 1-in-40 chance that there isn't an actual difference, so these results do need to be taken with a grain of salt.
+
+Now that we've determined that there is a difference, we need to decide which direction that this difference is in. At first glance, it looks like Republican's are in fact older voters, given they have a higher average of 52 vs 51 for Democrats.
+
+
+
+
+
+
+
+
+#misc notes for Max (will not be included in report)
+
+```{r fig.align="center", echo = FALSE,fig.width = 10,fig.height=2}
+#bar and line chart combined
+df %>%
+  group_by(party_pre_preference_simplified, presidential_preference_simplified) %>%
+  summarize(avg = mean(age),
+            count = n()) %>%
+  unite('party_vote', party_pre_preference_simplified:presidential_preference_simplified, remove = TRUE) %>%
+  ggplot() +
+  aes(x = interaction(party_pre_preference_simplified, presidential_preference_simplified), y = avg) +
+  geom_line() +
+  geom_point() #+
+  # ggtitle(label = 'Declared Party and Voting Party Affiliation', subtitle = 'NAs correspond to non-respondents (plus related)')  + 
+  # scale_y_continuous(sec.axis = sec_axis(~./max(df$age))) +
+  # xlab('Party.Vote') + 
+  # ylab('Count of respondents') +
+  # theme(axis.title.x = element_text(vjust=-10, margin = margin(b=30))) +
+  # labs(fill = '2016 Presidential Vote') +
+  # scale_fill_manual(values = cb_palette_1)
+```
+
+```{r fig.align="center", echo = FALSE,fig.width = 10,fig.height=2}
+# attempt at creating a combined chart
+df %>%
+  group_by(party_pre_preference_simplified, 
+           presidential_preference_simplified,
+           vote_in_2016_simplified) %>%
+  summarize(avg = mean(age),
+            count = n()) %>%
+  ggplot() +
+  geom_line(aes(x = interaction(party_pre_preference_simplified, presidential_preference_simplified), y = avg)) + 
+  geom_point(aes(x = interaction(party_pre_preference_simplified, presidential_preference_simplified), y = avg)) +
+  geom_bar(aes(fill = vote_in_2016_simplified, x = interaction(party_pre_preference_simplified, presidential_preference_simplified)),
+           position = 'stack')
+```
+
+
+
+```{r}
+df %>%
+  group_by(party_pre_preference_simplified, presidential_preference_simplified) %>%
+  summarize(avg = mean(age),
+            count = n()) %>%
+  unite('party_vote', party_pre_preference_simplified:presidential_preference_simplified, remove = TRUE) %>%
+  ggplot() +
+  aes(x = party_vote, y = avg) + 
+  geom_line() +
+  geom_point()
+```
+```{r}
+#age by registered non-registered
+df %>%
+  
+```
+
+
+```{r fig.align="center", echo = FALSE,fig.width = 10,fig.height=2}
+#2016 votes for no party but voted dem in 2020. Shows high amount of non-voters
+df %>%
+  filter(party_pre_preference_simplified == 'NA' & presidential_preference_simplified == 'Democrat') %>%
+  ggplot() +
+  aes(x = vote_in_2016_simplified) + 
+  geom_bar()
+```
+
+
+```{r plots, message = FALSE, echo = FALSE, fig.cap='Voter Emotions and Feelings', fig.pos='!b'}
+# (party_voting_affiliation) | (party / 
+#                   more_angry_plot ) 
+```
+
+
+
